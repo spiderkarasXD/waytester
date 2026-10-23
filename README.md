@@ -46,6 +46,10 @@ npm run dist:linux   # AppImage + tar.gz (AppImage/deb собираются на
 
 Данные лаунчера: `%APPDATA%\WayTester` (Windows), `~/.local/share/waytester` (Linux), `~/Library/Application Support/WayTester` (macOS). Переопределяется переменной `WAYTESTER_HOME`.
 
+## Дисклеймер
+
+WayTester — неофициальный лаунчер, не одобрен Mojang или Microsoft и не связан с ними. Нужна лицензионная Minecraft: Java Edition. Лицензия кода: MIT.
+
 ## Устройство
 
 ```
