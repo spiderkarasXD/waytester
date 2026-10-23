@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5f86ff"/>
+      <stop offset="0.55" stop-color="#8f6bff"/>
+      <stop offset="1" stop-color="#ff7ac2"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.28" cy="0.22" r="0.7">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.25"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9e4ff"/>
+    </linearGradient>
+    <linearGradient id="left" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="right" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.46"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.22"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#2a0f6b" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="squircle"><rect x="16" y="16" width="480" height="480" rx="124"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <rect x="16" y="16" width="480" height="480" fill="url(#bg)"/>
+    <rect x="16" y="16" width="480" height="480" fill="url(#glow)"/>
+    <circle cx="430" cy="440" r="150" fill="#ffd1ec" opacity="0.28"/>
+    <!-- frosted pane -->
+    <rect x="70" y="70" width="372" height="372" rx="96" fill="#ffffff" fill-opacity="0.13" stroke="url(#rim)" stroke-width="3"/>
+  </g>
+  <rect x="17.5" y="17.5" width="477" height="477" rx="122.5" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/>
+
+  <!-- isometric block with a W carved into the front faces -->
+  <g filter="url(#shadow)">
+    <path d="M256 138 L360 198 L256 258 L152 198 Z" fill="url(#top)"/>
+    <path d="M152 198 L256 258 L256 378 L152 318 Z" fill="url(#left)"/>
+    <path d="M256 258 L360 198 L360 318 L256 378 Z" fill="url(#right)"/>
+    <path d="M152 198 L256 258 L360 198" fill="none" stroke="#ffffff" stroke-opacity="0.9" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M256 258 L256 378" stroke="#ffffff" stroke-opacity="0.7" stroke-width="3"/>
+    <path d="M200 186 L256 154 L312 186 L256 218 Z" fill="#8f6bff" fill-opacity="0.16"/>
+    <path d="M177 234 L216.5 333.6 L256 303.6 L295.5 333.6 L335 234" fill="none" stroke="#6a4bef" stroke-opacity="0.92" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

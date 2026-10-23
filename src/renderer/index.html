@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src https:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com"
+    />
+    <title>WayTester</title>
+    <link rel="stylesheet" href="vendor/roboto-flex/full.css" />
+    <link rel="stylesheet" href="vendor/symbols/rounded.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <div class="wallpaper"></div>
+      <div class="aurora a1"></div>
+      <div class="aurora a2"></div>
+      <div class="aurora a3"></div>
+      <div class="grain"></div>
+    </div>
+
+    <header class="titlebar">
+      <div class="brand">
+        <img class="brand-mark" src="icon.svg" alt="" />
+        <span class="brand-name">WayTester</span>
+      </div>
+      <div class="titlebar-spacer"></div>
+      <button class="icon-btn" id="tasks-btn" title="Загрузки">
+        <span class="icon">download</span>
+        <svg class="task-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" /></svg>
+        <span class="badge" hidden></span>
+      </button>
+      <button class="account-chip" id="account-chip">
+        <canvas class="avatar" width="8" height="8"></canvas>
+        <span class="account-name">Нет аккаунта</span>
+        <span class="icon">expand_more</span>
+      </button>
+      <div class="window-controls">
+        <button data-win="minimize" title="Свернуть"><span class="icon">remove</span></button>
+        <button data-win="maximize" title="Развернуть"><span class="icon">crop_square</span></button>
+        <button data-win="close" class="close" title="Закрыть"><span class="icon">close</span></button>
+      </div>
+    </header>
+
+    <nav class="rail">
+      <button class="fab" id="fab-create" title="Новая сборка"><span class="icon">add</span></button>
+      <a class="rail-item" data-route="library"><span class="rail-icon"><span class="icon">grid_view</span></span><span>Библиотека</span></a>
+      <a class="rail-item" data-route="browse"><span class="rail-icon"><span class="icon">explore</span></span><span>Обзор</span></a>
+      <a class="rail-item" data-route="skins"><span class="rail-icon"><span class="icon">checkroom</span></span><span>Скины</span></a>
+      <a class="rail-item" data-route="settings"><span class="rail-icon"><span class="icon">tune</span></span><span>Настройки</span></a>
+    </nav>
+
+    <main id="view"></main>
+    <div id="overlays"></div>
+    <div id="toasts"></div>
+    <div id="drop-hint"><span class="icon">move_to_inbox</span><span>Отпустите, чтобы импортировать</span></div>
+
+    <script src="vendor/skinview3d/skinview3d.bundle.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

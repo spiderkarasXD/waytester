@@ -1,0 +1,102 @@
+{
+  "name": "waytester",
+  "productName": "WayTester",
+  "version": "1.0.0",
+  "description": "WayTester — Minecraft launcher with Material 3 + frosted glass design",
+  "main": "src/main/main.js",
+  "author": "WayTester",
+  "license": "MIT",
+  "homepage": "https://github.com/waytester/waytester",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win"
+  },
+  "dependencies": {
+    "@fontsource-variable/roboto-flex": "^5.2.8",
+    "adm-zip": "^0.5.16",
+    "material-symbols": "^0.36.2",
+    "qrcode": "^1.5.4",
+    "skinview3d": "^3.4.2"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "dev.waytester.launcher",
+    "productName": "WayTester",
+    "artifactName": "WayTester-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asarUnpack": [],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "WayTester-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "WayTester-Portable-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Game",
+      "icon": "build/icon.png",
+      "maintainer": "WayTester",
+      "synopsis": "Minecraft launcher",
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "WayTester",
+          "Keywords": "minecraft;launcher;modrinth;curseforge;"
+        }
+      },
+      "syncDesktopName": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.games",
+      "icon": "build/icon.png"
+    }
+  },
+  "desktopName": "waytester.desktop"
+}

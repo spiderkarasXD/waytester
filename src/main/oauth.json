@@ -1,0 +1,4 @@
+{
+  "_comment": "Azure application (client) ID for Microsoft sign-in. Register one app at portal.azure.com: supported accounts = Personal Microsoft accounts only; platform 'Mobile and desktop applications' with redirect URI http://localhost; Allow public client flows = Yes. Then get it approved for Minecraft at https://aka.ms/mce-reviewappid. The WAYTESTER_CLIENT_ID env var overrides this value.",
+  "clientId": "35c1ad85-e240-4ad6-89f8-b383be35e4b8"
+}
