@@ -170,7 +170,7 @@ export function settingsView(page, params) {
   );
 
   // Platforms
-  const cfKey = h('input.input', { type: 'password', value: s.curseforgeKey, placeholder: '$2a$10$…', onchange: () => saveSettings({ curseforgeKey: cfKey.value.trim() }) });
+  const cfKey = h('input.input', { type: 'password', value: s.curseforgeKey, placeholder: 'Встроенный ключ', onchange: () => saveSettings({ curseforgeKey: cfKey.value.trim() }) });
   sections.platforms = h(
     'div.set-card.glass',
     {},
@@ -178,7 +178,7 @@ export function settingsView(page, params) {
     row('Modrinth', 'Работает без настройки', h('span.tag.primary', {}, icon('check'), 'Подключено')),
     row(
       'CurseForge API key',
-      'Бесплатный ключ: console.curseforge.com → API keys',
+      'Работает без настройки. Необязательно: свой ключ с console.curseforge.com',
       h('div.ctl.row', {}, cfKey, iconBtn('open_in_new', { title: 'Получить ключ', onClick: () => api('app:openExternal', 'https://console.curseforge.com/') })),
     ),
   );

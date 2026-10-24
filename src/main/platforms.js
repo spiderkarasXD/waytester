@@ -100,8 +100,13 @@ const CF_LOADER = { forge: 1, fabric: 4, quilt: 5, neoforge: 6 };
 const CF_LOADER_NAME = { 1: 'forge', 4: 'fabric', 5: 'quilt', 6: 'neoforge' };
 const CF_SORT = { relevance: 1, downloads: 6, follows: 2, newest: 11, updated: 3 };
 
+// Key shipped with the build (src/main/curseforge.json, not in git); a key from settings overrides it.
 function cfKey() {
-  const key = settings.get().curseforgeKey.trim();
+  let bundled = '';
+  try {
+    bundled = require('./curseforge.json').apiKey || '';
+  } catch {}
+  const key = (settings.get().curseforgeKey || bundled).trim();
   if (!key) throw new Error('Для CurseForge нужен API-ключ: Настройки → Платформы (console.curseforge.com)');
   return key;
 }

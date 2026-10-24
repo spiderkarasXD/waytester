@@ -2,3 +2,5 @@ node_modules/
 dist/
 *.log
 .github/
+# CurseForge API key bundled into builds; kept out of the public repo.
+src/main/curseforge.json
