@@ -33,7 +33,6 @@ const DEFAULT_SETTINGS = {
   closeOnLaunch: false,
   showSnapshots: false,
   concurrency: 24,
-  msClientId: '',
   curseforgeKey: '',
 };
 

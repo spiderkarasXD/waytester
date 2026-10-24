@@ -161,14 +161,12 @@ export function settingsView(page, params) {
       );
     }
   };
-  const clientId = h('input.input', { value: s.msClientId, placeholder: '00000000-0000-0000-0000-000000000000', onchange: () => saveSettings({ msClientId: clientId.value.trim() }) });
   sections.accounts = h(
     'div.set-card.glass',
     {},
     h('h3', {}, 'Аккаунты'),
     accList,
     row('Добавить аккаунт', 'Лицензионный аккаунт Microsoft', btn('Добавить', { kind: 'tonal', icon: 'person_add', onClick: () => openAddAccount() })),
-    row('Свой Azure Client ID', 'Необязательно: заменяет ID, встроенный в сборку', h('div.ctl', {}, clientId)),
   );
 
   // Platforms

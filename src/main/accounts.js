@@ -1,15 +1,16 @@
 const crypto = require('crypto');
 const fs = require('fs');
-const http = require('http');
-const QRCode = require('qrcode');
 const path = require('path');
-const { safeStorage } = require('electron');
+const { safeStorage, BrowserWindow, session } = require('electron');
 const paths = require('./paths');
 const net = require('./net');
-const { readJson, writeJson, settings } = require('./store');
+const { readJson, writeJson } = require('./store');
 
-const MS_SCOPE = 'XboxLive.signin offline_access';
-const MS_BASE = 'https://login.microsoftonline.com/consumers/oauth2/v2.0';
+const MS_OAUTH = require('./oauth.json');
+const MS_AUTHORIZE = 'https://login.live.com/oauth20_authorize.srf';
+const MS_TOKEN = 'https://login.live.com/oauth20_token.srf';
+// Separate cookie jar for the sign-in window, so it can be wiped without touching the launcher.
+const MS_PARTITION = 'persist:msa-oauth';
 const MC_API = 'https://api.minecraftservices.com';
 
 // ---------- storage (tokens encrypted with the OS keychain when available) ----------
@@ -78,6 +79,7 @@ function remove(id) {
   data.list = data.list.filter((a) => a.id !== id);
   if (data.selected === id) data.selected = data.list[0]?.id || null;
   save(data);
+  clearMsSession();
 }
 
 function select(id) {
@@ -93,29 +95,6 @@ function get(id) {
 // ---------- Microsoft ----------
 
 const pendingLogins = new Map();
-
-// Client ID shipped with the build (oauth.json / env), overridable in settings for advanced users.
-function msClientId() {
-  let bundled = '';
-  try {
-    bundled = require('./oauth.json').clientId || '';
-  } catch {}
-  const id = (settings.get().msClientId || process.env.WAYTESTER_CLIENT_ID || bundled).trim();
-  if (!id) {
-    const err = new Error('В этой сборке WayTester не задан Microsoft Client ID (src/main/oauth.json)');
-    err.code = 'NO_CLIENT_ID';
-    throw err;
-  }
-  return id;
-}
-
-function hasClientId() {
-  try {
-    return !!msClientId();
-  } catch {
-    return false;
-  }
-}
 
 async function postForm(url, form) {
   const res = await net.request(url, {
@@ -136,20 +115,20 @@ async function postJson(url, body, headers = {}) {
   return { status: res.status, body: data };
 }
 
-const b64url = (buf) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+// Wipes the embedded window's Microsoft cookies so the next sign-in starts from a clean account picker.
+function clearMsSession() {
+  const part = session.fromPartition(MS_PARTITION);
+  return Promise.all([
+    part.clearStorageData({ storages: ['cookies', 'localstorage', 'indexdb', 'websql', 'serviceworkers', 'cachestorage'] }),
+    part.clearCache(),
+  ]).catch(() => {});
+}
 
-const DONE_PAGE = (ok, text) => `<!doctype html><html lang="ru"><meta charset="utf-8"><title>WayTester</title>
-<body style="margin:0;height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:radial-gradient(circle at 30% 20%,#3b2d7a,#0d1017 60%);color:#e8e8f4">
-<div style="text-align:center;padding:40px 48px;border-radius:28px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(20px)">
-<div style="font-size:56px">${ok ? '&#9989;' : '&#9888;&#65039;'}</div><h1 style="font-weight:500;margin:10px 0 6px">${ok ? 'Вход выполнен' : 'Не получилось войти'}</h1>
-<p style="opacity:.75;margin:0">${text}</p></div></body></html>`;
-
-// Prism-style sign-in: the system browser does an auth-code (PKCE) login with a loopback redirect,
-// while a device code + QR is offered in parallel for signing in from another device.
+// Sign-in in an embedded window: login.live.com redirects to oauth20_desktop.srf with ?code=…,
+// which we catch before the page loads and exchange for tokens.
 async function msStartLogin() {
-  const clientId = msClientId();
   const loginId = crypto.randomUUID();
-  const pending = { clientId, settled: false, server: null };
+  const pending = { settled: false, exchanging: false, window: null };
   pending.promise = new Promise((resolve, reject) => {
     pending.resolve = resolve;
     pending.reject = reject;
@@ -157,101 +136,73 @@ async function msStartLogin() {
   pending.promise.catch(() => {});
   pendingLogins.set(loginId, pending);
 
-  // 1) system browser + loopback redirect
-  const verifier = b64url(crypto.randomBytes(32));
-  const challenge = b64url(crypto.createHash('sha256').update(verifier).digest());
-  const oauthState = b64url(crypto.randomBytes(16));
-  const server = http.createServer();
-  pending.server = server;
-  await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const redirectUri = `http://localhost:${server.address().port}`;
-  server.on('request', async (req, res) => {
-    const url = new URL(req.url, redirectUri);
-    const code = url.searchParams.get('code');
-    const error = url.searchParams.get('error_description') || url.searchParams.get('error');
-    if (url.pathname !== '/' || url.searchParams.get('state') !== oauthState || (!code && !error)) {
-      res.writeHead(404).end();
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    if (error) {
-      res.end(DONE_PAGE(false, 'Закройте вкладку и попробуйте ещё раз в WayTester.'));
-      settle(loginId, null, new Error(error));
-      return;
-    }
-    res.end(DONE_PAGE(true, 'Можно закрыть вкладку и вернуться в WayTester.'));
+  const win = new BrowserWindow({
+    width: 500,
+    height: 640,
+    title: 'Вход в Microsoft',
+    autoHideMenuBar: true,
+    show: false,
+    backgroundColor: '#ffffff',
+    webPreferences: { partition: MS_PARTITION, contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  pending.window = win;
+  win.once('ready-to-show', () => win.show());
+  win.on('closed', () => {
+    pending.window = null;
+    if (!pending.exchanging) settle(loginId, null, new Error('Окно входа закрыто'));
+  });
+
+  const onNavigate = async (event, url) => {
+    if (pending.exchanging || !url.startsWith(MS_OAUTH.redirectUri)) return;
+    const params = new URL(url).searchParams;
+    const code = params.get('code');
+    const error = params.get('error_description') || params.get('error');
+    if (!code && !error) return;
+    event?.preventDefault?.();
+    pending.exchanging = true;
+    if (!win.isDestroyed()) win.destroy();
+    if (error) return settle(loginId, null, new Error(error));
     try {
-      const { body } = await postForm(`${MS_BASE}/token`, {
-        client_id: clientId,
+      const { body } = await postForm(MS_TOKEN, {
+        client_id: MS_OAUTH.clientId,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectUri,
-        code_verifier: verifier,
-        scope: MS_SCOPE,
+        redirect_uri: MS_OAUTH.redirectUri,
+        scope: MS_OAUTH.scope,
       });
       if (body.error) throw new Error(body.error_description || body.error);
       settle(loginId, await msFinish(body.access_token, body.refresh_token));
     } catch (e) {
       settle(loginId, null, e);
     }
+  };
+  win.webContents.on('will-redirect', onNavigate);
+  win.webContents.on('will-navigate', onNavigate);
+  win.webContents.on('did-navigate', onNavigate);
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, _url, isMainFrame) => {
+    // -3 = ERR_ABORTED: navigation we cancelled ourselves on the redirect.
+    if (!isMainFrame || errorCode === -3 || pending.exchanging) return;
+    settle(loginId, null, new Error(`Не удалось открыть страницу входа Microsoft: ${errorDescription}`));
   });
-  const authUrl = `${MS_BASE}/authorize?${new URLSearchParams({
-    client_id: clientId,
+
+  const authUrl = `${MS_AUTHORIZE}?${new URLSearchParams({
+    client_id: MS_OAUTH.clientId,
     response_type: 'code',
-    redirect_uri: redirectUri,
-    scope: MS_SCOPE,
-    state: oauthState,
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
+    redirect_uri: MS_OAUTH.redirectUri,
+    scope: MS_OAUTH.scope,
     prompt: 'select_account',
   })}`;
-
-  // 2) device code for another device (skipped if the app registration doesn't allow it)
-  let device = null;
-  const dc = await postForm(`${MS_BASE}/devicecode`, { client_id: clientId, scope: MS_SCOPE }).catch(() => null);
-  if (dc?.status === 200) {
-    const link = dc.body.verification_uri;
-    device = {
-      userCode: dc.body.user_code,
-      url: link,
-      qr: await QRCode.toDataURL(`${link}?otc=${dc.body.user_code}`, { margin: 1, width: 220, color: { dark: '#111318', light: '#ffffff' } }),
-    };
-    pollDeviceCode(loginId, dc.body).catch((e) => settle(loginId, null, e));
-  }
+  win.loadURL(authUrl).catch(() => {});
 
   setTimeout(() => settle(loginId, null, new Error('Время на вход истекло')), 15 * 60 * 1000).unref?.();
-  return { loginId, authUrl, device };
-}
-
-async function pollDeviceCode(loginId, dc) {
-  const pending = pendingLogins.get(loginId);
-  let interval = (dc.interval || 5) * 1000;
-  const deadline = Date.now() + dc.expires_in * 1000;
-  while (pending && !pending.settled && Date.now() < deadline) {
-    await net.sleep(interval);
-    if (pending.settled) return;
-    const { body } = await postForm(`${MS_BASE}/token`, {
-      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-      client_id: pending.clientId,
-      device_code: dc.device_code,
-    });
-    if (body.error === 'authorization_pending') continue;
-    if (body.error === 'slow_down') {
-      interval += 5000;
-      continue;
-    }
-    if (body.error === 'expired_token') return;
-    if (body.error) throw new Error(body.error_description || body.error);
-    if (!pending.settled) settle(loginId, await msFinish(body.access_token, body.refresh_token));
-    return;
-  }
+  return { loginId };
 }
 
 function settle(loginId, account, error) {
   const pending = pendingLogins.get(loginId);
   if (!pending || pending.settled) return;
   pending.settled = true;
-  pending.server?.close();
+  if (pending.window && !pending.window.isDestroyed()) pending.window.destroy();
   pendingLogins.delete(loginId);
   if (error) pending.reject(error);
   else pending.resolve(publicView(account));
@@ -295,11 +246,7 @@ async function msFinish(msAccessToken, msRefreshToken) {
     identityToken: `XBL3.0 x=${uhs};${xsts.body.Token}`,
   });
   if (login.status !== 200) {
-    throw new Error(
-      login.status === 403
-        ? 'Minecraft API отклонил Client ID: приложение Azure должно быть одобрено Mojang (aka.ms/mce-reviewappid)'
-        : `Minecraft: ошибка входа (${login.status})`,
-    );
+    throw new Error(`Minecraft: ошибка входа (${login.status})`);
   }
   const mcToken = login.body.access_token;
   const profileRes = await net.request(`${MC_API}/minecraft/profile`, { headers: { Authorization: `Bearer ${mcToken}` } });
@@ -322,12 +269,12 @@ async function msFinish(msAccessToken, msRefreshToken) {
 }
 
 async function msRefresh(account) {
-  const clientId = msClientId();
-  const { body } = await postForm(`${MS_BASE}/token`, {
+  const { body } = await postForm(MS_TOKEN, {
     grant_type: 'refresh_token',
-    client_id: clientId,
+    client_id: MS_OAUTH.clientId,
     refresh_token: account.refreshToken,
-    scope: MS_SCOPE,
+    redirect_uri: MS_OAUTH.redirectUri,
+    scope: MS_OAUTH.scope,
   });
   if (body.error) throw new Error('Сессия Microsoft истекла — войдите заново');
   return msFinish(body.access_token, body.refresh_token);
@@ -349,7 +296,6 @@ module.exports = {
   get,
   upsert,
   msStartLogin,
-  hasClientId,
   msWaitForLogin,
   msCancel,
   prepareForLaunch,

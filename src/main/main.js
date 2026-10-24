@@ -183,7 +183,6 @@ const handlers = {
   'accounts:select': (id) => accounts.select(id),
   'accounts:remove': (id) => accounts.remove(id),
   'accounts:msStart': () => accounts.msStartLogin(),
-  'accounts:hasClientId': () => accounts.hasClientId(),
   'accounts:msWait': (loginId) => accounts.msWaitForLogin(loginId),
   'accounts:msCancel': (loginId) => accounts.msCancel(loginId),
 

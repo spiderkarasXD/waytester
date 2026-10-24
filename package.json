@@ -1,7 +1,7 @@
 {
   "name": "waytester",
   "productName": "WayTester",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WayTester — Minecraft launcher with Material 3 + frosted glass design",
   "main": "src/main/main.js",
   "author": "WayTester",
