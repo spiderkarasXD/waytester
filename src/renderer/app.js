@@ -1,6 +1,7 @@
 import { api, h, icon, clear, menu, toast, btn, cleanError } from './ui.js';
 import { state, on, emit, refreshInstances, refreshAccounts, selectedAccount } from './state.js';
 import { applyTheme, applyWallpaper } from './theme.js';
+import { motionEnabled, setupMotion, animateRouteChange } from './motion.js';
 import { drawHead } from './skin2d.js';
 import { libraryView } from './views/library.js';
 import { instanceView } from './views/instance.js';
@@ -14,18 +15,29 @@ import { runOnboarding } from './views/onboarding.js';
 const views = { library: libraryView, instance: instanceView, browse: browseView, skins: skinsView, settings: settingsView };
 let current = { route: null, params: {}, cleanup: null };
 
-export function navigate(route, params = {}) {
+function renderRoute(route, params, transitioning = false) {
   current.cleanup?.();
   const view = document.getElementById('view');
   clear(view);
   const page = h('div.page');
+  if (transitioning) page.classList.add('route-animated');
   view.append(page);
   current = { route, params, cleanup: null };
   document.querySelectorAll('.rail-item').forEach((el) => {
     const r = el.dataset.route;
     el.classList.toggle('active', r === route || (route === 'instance' && r === 'library'));
+    if (el.classList.contains('active')) el.setAttribute('aria-current', 'page');
+    else el.removeAttribute('aria-current');
   });
   current.cleanup = views[route](page, params) || null;
+}
+
+export function navigate(route, params = {}) {
+  const view = document.getElementById('view');
+  const previous = view.firstElementChild;
+  const animate = !!current.route && motionEnabled();
+  renderRoute(route, params, animate);
+  if (animate) animateRouteChange(view, previous);
 }
 
 export const currentRoute = () => current;
@@ -212,17 +224,23 @@ async function boot() {
   document.body.classList.add(`os-${state.info.platform}`);
 
   setupWindowControls();
+  setupMotion();
   setupEvents();
   setupDrop();
   document.querySelectorAll('.rail-item').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.route)));
   document.getElementById('fab-create').addEventListener('click', () => openCreateDialog());
+  document.getElementById('appearance-btn').addEventListener('click', () => navigate('settings', { section: 'appearance' }));
   document.getElementById('account-chip').addEventListener('click', (e) => accountMenu(e.currentTarget));
   document.getElementById('tasks-btn').addEventListener('click', (e) => tasksPopover(e.currentTarget));
 
   await Promise.all([refreshInstances(), refreshAccounts()]);
-  state.defaultSkin = await api('skins:default').catch(() => null);
   renderAccountChip();
   navigate('library');
+  // A remote avatar must never hold up the launcher's first screen.
+  api('skins:default').then((skin) => {
+    state.defaultSkin = skin;
+    renderAccountChip();
+  }).catch(() => {});
 
   if (!state.settings.onboarded) runOnboarding();
 }

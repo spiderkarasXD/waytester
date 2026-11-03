@@ -42,8 +42,8 @@ export function runOnboarding() {
         'div.ob-step',
         {},
         h('img.ob-logo', { src: 'icon.svg', alt: '' }),
-        h('h1.ob-title', {}, 'Добро пожаловать в ', h('span.grad', {}, 'WayTester')),
-        h('p.ob-text', {}, 'Красивый лаунчер Minecraft: моды и модпаки в пару кликов, любые загрузчики, 3D-примерка скинов и перенос сборок из других лаунчеров.'),
+        h('h1.ob-title', {}, 'Ваш Minecraft в WayTester'),
+        h('p.ob-text', {}, 'Сборки, моды и модпаки в одном месте. Выбирайте загрузчик, примеряйте скины и переносите свои сборки из других лаунчеров.'),
         h(
           'div.ob-features',
           {},

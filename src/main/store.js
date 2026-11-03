@@ -19,11 +19,15 @@ function writeJson(file, data) {
 }
 
 const DEFAULT_SETTINGS = {
-  accent: '#8ab4ff',
+  accent: '#a8c7a0',
   theme: 'dark',
   blur: 28,
-  glass: 0.55,
+  glass: 0.72,
   wallpaper: '',
+  wallpaperName: '',
+  wallpaperDim: 0.24,
+  wallpaperFit: 'cover',
+  reduceMotion: false,
   memoryMin: 1024,
   memoryMax: 4096,
   jvmArgs: '',

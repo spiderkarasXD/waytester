@@ -22,6 +22,7 @@ const accounts = require('./accounts');
 const skins = require('./skins');
 const platforms = require('./platforms');
 const modpacks = require('./modpacks');
+const wallpaper = require('./wallpaper');
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDERER = path.join(ROOT, 'src', 'renderer');
@@ -98,21 +99,14 @@ const handlers = {
   'settings:get': () => settings.get(),
   'settings:set': (patch) => settings.set(patch),
   'settings:pickWallpaper': async () => {
-    const r = await dialog.showOpenDialog(win, { filters: [{ name: 'Изображения', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
-    if (r.canceled) return null;
-    const ext = path.extname(r.filePaths[0]);
-    const dest = path.join(paths.root, `wallpaper${ext}`);
-    fs.copyFileSync(r.filePaths[0], dest);
-    const data = `data:image/${ext.slice(1).replace('jpg', 'jpeg')};base64,${fs.readFileSync(dest).toString('base64')}`;
-    settings.set({ wallpaper: dest });
-    return data;
+    wallpaper.discardWallpaper();
+    const r = await dialog.showOpenDialog(win, { title: 'Обои WayTester', properties: ['openFile'], filters: [{ name: 'Изображения', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+    if (r.canceled || !r.filePaths.length) return null;
+    return wallpaper.stageWallpaper(r.filePaths[0]);
   },
-  'settings:wallpaperData': () => {
-    const file = settings.get().wallpaper;
-    if (!file || !fs.existsSync(file)) return null;
-    const ext = path.extname(file).slice(1).replace('jpg', 'jpeg');
-    return `data:image/${ext};base64,${fs.readFileSync(file).toString('base64')}`;
-  },
+  'settings:commitWallpaper': (token) => wallpaper.commitWallpaper(token),
+  'settings:discardWallpaper': () => wallpaper.discardWallpaper(),
+  'settings:wallpaperData': () => wallpaper.wallpaperData(),
   'java:detect': () => java.detect(),
   'java:pick': async () => {
     const r = await dialog.showOpenDialog(win, { properties: ['openFile'], title: 'Выберите java' });

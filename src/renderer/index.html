@@ -14,10 +14,8 @@
   <body>
     <div class="backdrop" aria-hidden="true">
       <div class="wallpaper"></div>
-      <div class="aurora a1"></div>
-      <div class="aurora a2"></div>
-      <div class="aurora a3"></div>
-      <div class="grain"></div>
+      <div class="wallpaper"></div>
+      <div class="wallpaper-scrim"></div>
     </div>
 
     <header class="titlebar">
@@ -43,12 +41,15 @@
       </div>
     </header>
 
-    <nav class="rail">
-      <button class="fab" id="fab-create" title="Новая сборка"><span class="icon">add</span></button>
-      <a class="rail-item" data-route="library"><span class="rail-icon"><span class="icon">grid_view</span></span><span>Библиотека</span></a>
-      <a class="rail-item" data-route="browse"><span class="rail-icon"><span class="icon">explore</span></span><span>Обзор</span></a>
-      <a class="rail-item" data-route="skins"><span class="rail-icon"><span class="icon">checkroom</span></span><span>Скины</span></a>
-      <a class="rail-item" data-route="settings"><span class="rail-icon"><span class="icon">tune</span></span><span>Настройки</span></a>
+    <nav class="rail" aria-label="Основная навигация">
+      <button class="fab" id="fab-create" title="Новая сборка"><span class="icon">add</span><span>Новая сборка</span></button>
+      <button class="rail-item" data-route="library"><span class="rail-icon"><span class="icon">grid_view</span></span><span>Библиотека</span></button>
+      <button class="rail-item" data-route="browse"><span class="rail-icon"><span class="icon">explore</span></span><span>Обзор</span></button>
+      <button class="rail-item" data-route="skins"><span class="rail-icon"><span class="icon">checkroom</span></span><span>Скины</span></button>
+      <button class="rail-item" data-route="settings"><span class="rail-icon"><span class="icon">tune</span></span><span>Настройки</span></button>
+      <div class="rail-spacer"></div>
+      <button class="appearance-shortcut" id="appearance-btn"><span class="icon">wallpaper</span><span>Оформление</span><span class="accent-dot"></span></button>
+      <div class="rail-caption">Minecraft: Java Edition</div>
     </nav>
 
     <main id="view"></main>

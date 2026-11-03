@@ -1,6 +1,7 @@
 import { h, icon, btn, iconBtn, clear, toast, api, segmented, slider, switchEl, confirm } from '../ui.js';
 import { state, on, saveSettings, refreshAccounts } from '../state.js';
-import { ACCENTS, applyTheme, applyWallpaper } from '../theme.js';
+import { ACCENTS, applyTheme } from '../theme.js';
+import { wallpaperSettings } from '../wallpaper.js';
 import { openAddAccount } from './accounts.js';
 import { openCreateDialog } from './create.js';
 import { runOnboarding } from './onboarding.js';
@@ -12,8 +13,8 @@ export function accentPicker(onPick) {
   const el = h('div.swatches');
   const draw = () => {
     clear(el);
-    for (const c of ACCENTS) el.append(h(`button.swatch${state.settings.accent === c ? '.on' : ''}`, { style: { background: c }, onclick: () => pick(c) }));
-    const custom = h('input', { type: 'color', value: state.settings.accent, oninput: () => pick(custom.value, false) });
+    for (const c of ACCENTS) el.append(h(`button.swatch${state.settings.accent === c ? '.on' : ''}`, { style: { background: c }, title: c, 'aria-label': `Акцент ${c}`, 'aria-pressed': state.settings.accent === c ? 'true' : 'false', onclick: () => pick(c) }));
+    const custom = h('input', { type: 'color', value: state.settings.accent, 'aria-label': 'Свой акцентный цвет', onchange: () => pick(custom.value) });
     el.append(h('label.swatch-custom', { title: 'Свой цвет' }, icon('colorize'), custom));
   };
   const pick = async (c, redraw = true) => {
@@ -41,15 +42,18 @@ export function themePicker() {
 export function settingsView(page, params) {
   const s = state.settings;
   const sections = {};
+  const wallpaper = wallpaperSettings();
 
   // Appearance
   const blurLabel = h('span.tag.primary', {}, `${s.blur}px`);
-  const glassLabel = h('span.tag.primary', {}, `${Math.round(s.glass * 100)}%`);
+  const glassLabel = h('span.tag.primary', {}, `${Math.round(Math.max(0.45, s.glass) * 100)}%`);
   const live = (patch) => applyTheme({ ...state.settings, ...patch });
   const blur = slider({ min: 0, max: 60, value: s.blur, onInput: (v) => ((blurLabel.textContent = `${v}px`), live({ blur: v })) });
   blur.addEventListener('change', () => saveSettings({ blur: Number(blur.value) }));
-  const glass = slider({ min: 0.15, max: 0.95, step: 0.01, value: s.glass, onInput: (v) => ((glassLabel.textContent = `${Math.round(v * 100)}%`), live({ glass: v })) });
+  const glass = slider({ min: 0.45, max: 0.95, step: 0.01, value: Math.max(0.45, s.glass), onInput: (v) => ((glassLabel.textContent = `${Math.round(v * 100)}%`), live({ glass: v })) });
   glass.addEventListener('change', () => saveSettings({ glass: Number(glass.value) }));
+  blur.setAttribute('aria-label', 'Размытие стекла');
+  glass.setAttribute('aria-label', 'Плотность панелей');
 
   sections.appearance = h(
     'div.set-card.glass',
@@ -57,21 +61,12 @@ export function settingsView(page, params) {
     h('h3', {}, 'Внешний вид'),
     row('Тема', null, themePicker()),
     row('Акцентный цвет', 'Вся палитра Material 3 строится из него', accentPicker()),
+    wallpaper.element,
     row(h('span.row', {}, 'Размытие стекла ', blurLabel), 'Сила эффекта frosted glass', h('div.ctl', {}, blur)),
     row(h('span.row', {}, 'Плотность панелей ', glassLabel), 'Насколько панели прозрачны', h('div.ctl', {}, glass)),
     row(
-      'Обои',
-      'Своя картинка за стеклом (иначе — живая аврора)',
-      h(
-        'div.row',
-        {},
-        btn('Выбрать', { kind: 'tonal', icon: 'wallpaper', onClick: async () => applyWallpaper(await api('settings:pickWallpaper')) }),
-        btn('Сбросить', { kind: 'text', onClick: async () => (await saveSettings({ wallpaper: '' }), applyWallpaper(null)) }),
-      ),
-    ),
-    row(
       'Меньше анимаций',
-      'Отключить движение фона',
+      'Сократить переходы и анимацию интерфейса',
       switchEl(!!s.reduceMotion, (v) => (document.body.classList.toggle('reduce-motion', v), saveSettings({ reduceMotion: v }))),
     ),
   );
@@ -82,7 +77,7 @@ export function settingsView(page, params) {
   mem.addEventListener('change', () => saveSettings({ memoryMax: Number(mem.value) }));
   const javaPath = h('input.input', { value: s.javaPath, placeholder: 'Автоматически', onchange: () => saveSettings({ javaPath: javaPath.value.trim() }) });
   const jvm = h('textarea.input', { value: s.jvmArgs, placeholder: 'Дополнительные аргументы для всех сборок', onchange: () => saveSettings({ jvmArgs: jvm.value.trim() }) });
-  const javaList = h('div.col', { style: { padding: '0 22px 14px' } });
+  const javaList = h('div.col', { style: { padding: '0 24px 16px' } });
   sections.java = h(
     'div.set-card.glass',
     {},
@@ -199,10 +194,11 @@ export function settingsView(page, params) {
   );
 
   page.append(
-    h('div.page-head', {}, h('div.grow', {}, h('h1.page-title', {}, 'Настройки'))),
+    h('div.page-head', {}, h('div.grow', {}, h('h1.page-title', {}, 'Настройки'), h('div.page-sub', {}, 'Ваш лаунчер, ваши привычки'))),
     h('div.settings', {}, Object.values(sections)),
   );
   drawAccounts();
-  if (params.section && sections[params.section]) setTimeout(() => sections[params.section].scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-  return on('accounts', drawAccounts);
+  if (params.section && sections[params.section]) sections[params.section].scrollIntoView({ block: 'start' });
+  const offAccounts = on('accounts', drawAccounts);
+  return () => { offAccounts(); wallpaper.dispose(); };
 }
