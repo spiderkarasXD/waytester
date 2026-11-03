@@ -126,13 +126,14 @@ a {
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0;
-  transition: opacity 240ms var(--ease);
+  transition: opacity 640ms var(--ease);
 }
 .wallpaper.on { opacity: 1; }
 .wallpaper-scrim {
   position: absolute;
   inset: 0;
   background: var(--wallpaper-scrim-color, rgba(8, 12, 9, 0.24));
+  z-index: 2;
 }
 
 /* ---------- glass ---------- */
@@ -434,7 +435,7 @@ a {
   height: 100%;
   overflow-y: auto;
   padding: 28px 28px 40px;
-  animation: page-in 240ms var(--ease);
+  animation: page-in 360ms var(--ease);
 }
 @keyframes page-in {
   from {
@@ -2282,6 +2283,46 @@ body.light .window-controls .close:hover .icon {
 }
 :where(button):disabled { cursor: default; }
 input, textarea { font-variant-numeric: tabular-nums; }
+
+/* Material motion: shared-axis navigation, staggered content, and state layers. */
+.route-leaving { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.route-animated, .route-animated .inst-card { animation: none; }
+.inst-card { animation: card-enter 360ms var(--ease) both; }
+.inst-card:nth-child(2) { animation-delay: 40ms; }
+.inst-card:nth-child(3) { animation-delay: 80ms; }
+.inst-card:nth-child(4) { animation-delay: 120ms; }
+.inst-card:nth-child(5) { animation-delay: 160ms; }
+.inst-card:nth-child(6) { animation-delay: 200ms; }
+@keyframes card-enter { from { opacity: 0; transform: translateY(12px); } }
+.btn, .fab, .icon-btn, .rail-item, .appearance-shortcut, .play-fab, .chip, .segmented button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.state-ripple {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+  animation: state-ripple 520ms var(--ease) both;
+}
+@keyframes state-ripple {
+  0% { opacity: 0.18; transform: translate(-50%, -50%) scale(0); }
+  45% { opacity: 0.12; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+.rail-item::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: transparent; z-index: -1; }
+.rail-item.active, .rail-item.active:hover { background: transparent; }
+.rail-item.active::before { background: var(--secondary-container); animation: nav-selection 320ms var(--ease); }
+.rail-item.active:hover::before { background: color-mix(in srgb, var(--secondary-container), var(--on-secondary-container) 6%); }
+@keyframes nav-selection { from { opacity: 0.3; transform: scaleX(0.76); } }
+.btn, .fab { transition: background-color 180ms var(--ease), color 180ms var(--ease), border-radius 260ms var(--ease), transform 160ms var(--ease); }
+.btn.lg:hover { border-radius: 28px; }
+.btn:active, .fab:active { transform: scale(0.97); }
+.titlebar, .rail, #view, .set-card, .preview-window { transition: background-color 260ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease); }
+
 @media (max-width: 1100px) {
   :root { --rail-w: 88px; }
   .brand { width: auto; }
@@ -2289,7 +2330,7 @@ input, textarea { font-variant-numeric: tabular-nums; }
   .rail-item { flex-direction: column; height: 64px; justify-content: center; gap: 4px; padding: 4px 0; font-size: 11px; border-radius: 16px; }
   .rail-item .rail-icon { height: 24px; }
   .fab { justify-content: center; padding: 0; margin-bottom: 12px; }
-  .fab > span:last-child, .appearance-shortcut > span:not(.icon), .rail-caption { display: none; }
+  .fab > span:not(.icon):not(.state-ripple), .appearance-shortcut > span:not(.icon):not(.state-ripple), .rail-caption { display: none; }
   .appearance-shortcut { padding: 0; justify-content: center; width: 100%; }
   .page { padding: 24px; }
   .hero { padding: 24px; gap: 20px; }

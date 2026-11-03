@@ -79,12 +79,23 @@ export function applyTheme(settings) {
 }
 
 let currentWallpaper = '';
+let wallpaperLayer = 0;
 export const getWallpaper = () => currentWallpaper;
 export function applyWallpaper(dataUrl) {
-  currentWallpaper = typeof dataUrl === 'string' && /^data:image\/(png|jpeg|webp);base64,[\da-z+/=\s]+$/i.test(dataUrl) ? dataUrl : '';
-  const el = document.querySelector('.wallpaper');
-  el.style.backgroundImage = currentWallpaper ? 'url("' + currentWallpaper + '")' : '';
-  el.classList.toggle('on', !!currentWallpaper);
+  const next = typeof dataUrl === 'string' && /^data:image\/(png|jpeg|webp);base64,[\da-z+/=\s]+$/i.test(dataUrl) ? dataUrl : '';
+  if (next === currentWallpaper) return;
+  currentWallpaper = next;
+  const layers = [...document.querySelectorAll('.wallpaper')];
+  if (currentWallpaper) {
+    wallpaperLayer = (wallpaperLayer + 1) % layers.length;
+    const incoming = layers[wallpaperLayer];
+    incoming.style.backgroundImage = 'url("' + currentWallpaper + '")';
+    // Keep the entering image above the old one while it becomes opaque.
+    layers.forEach(el => {
+      el.style.zIndex = el === incoming ? '1' : '0';
+      el.classList.toggle('on', el === incoming);
+    });
+  } else layers.forEach(el => el.classList.remove('on'));
   document.body.classList.toggle('has-wallpaper', !!currentWallpaper);
   window.dispatchEvent(new Event('wallpaperchange'));
 }
