@@ -24,6 +24,8 @@ export function navigate(route, params = {}) {
   document.querySelectorAll('.rail-item').forEach((el) => {
     const r = el.dataset.route;
     el.classList.toggle('active', r === route || (route === 'instance' && r === 'library'));
+    if (el.classList.contains('active')) el.setAttribute('aria-current', 'page');
+    else el.removeAttribute('aria-current');
   });
   current.cleanup = views[route](page, params) || null;
 }
@@ -216,13 +218,18 @@ async function boot() {
   setupDrop();
   document.querySelectorAll('.rail-item').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.route)));
   document.getElementById('fab-create').addEventListener('click', () => openCreateDialog());
+  document.getElementById('appearance-btn').addEventListener('click', () => navigate('settings', { section: 'appearance' }));
   document.getElementById('account-chip').addEventListener('click', (e) => accountMenu(e.currentTarget));
   document.getElementById('tasks-btn').addEventListener('click', (e) => tasksPopover(e.currentTarget));
 
   await Promise.all([refreshInstances(), refreshAccounts()]);
-  state.defaultSkin = await api('skins:default').catch(() => null);
   renderAccountChip();
   navigate('library');
+  // A remote avatar must never hold up the launcher's first screen.
+  api('skins:default').then((skin) => {
+    state.defaultSkin = skin;
+    renderAccountChip();
+  }).catch(() => {});
 
   if (!state.settings.onboarded) runOnboarding();
 }

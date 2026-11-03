@@ -26,14 +26,14 @@ function append(el, children) {
   }
 }
 
-export const icon = (name, cls = '') => h(`span.icon${cls ? `.${cls}` : ''}`, {}, name);
+export const icon = (name, cls = '') => h(`span.icon${cls ? `.${cls}` : ''}`, { 'aria-hidden': 'true' }, name);
 
 export function btn(label, { icon: ic, kind = 'filled', onClick, cls = '', title, disabled } = {}) {
   return h(`button.btn.${kind}${ic ? '.has-icon' : ''}${cls ? `.${cls}` : ''}`, { onclick: onClick, title, disabled }, ic && icon(ic), label);
 }
 
 export function iconBtn(name, { onClick, title, cls = '' } = {}) {
-  return h(`button.icon-btn${cls ? `.${cls}` : ''}`, { onclick: onClick, title }, icon(name));
+  return h(`button.icon-btn${cls ? `.${cls}` : ''}`, { onclick: onClick, title, 'aria-label': title }, icon(name));
 }
 
 export function clear(el) {
@@ -232,7 +232,7 @@ export function segmented(options, value, onChange) {
     clear(el);
     for (const o of options) {
       el.append(
-        h(`button${o.value === value ? '.on' : ''}`, { onclick: () => ((value = o.value), render(), onChange(o.value)) }, icon('check'), o.icon && o.value !== value && icon(o.icon), o.label),
+        h(`button${o.value === value ? '.on' : ''}`, { 'aria-pressed': o.value === value ? 'true' : 'false', onclick: () => ((value = o.value), render(), onChange(o.value)) }, icon('check'), o.icon && o.value !== value && icon(o.icon), o.label),
       );
     }
   };

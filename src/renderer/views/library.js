@@ -1,4 +1,4 @@
-import { h, icon, btn, clear, menu, confirm, toast, api, loaderTag, instanceIcon, fmtDate, fmtDuration } from '../ui.js';
+import { h, icon, btn, clear, menu, confirm, toast, api, loaderTag, instanceIcon, fmtDate, fmtDuration, LOADERS } from '../ui.js';
 import { state, on, refreshInstances } from '../state.js';
 import { navigate, play } from '../app.js';
 import { openCreateDialog } from './create.js';
@@ -36,7 +36,16 @@ function card(inst) {
   const el = h(
     'div.inst-card.glass',
     {
+      role: 'link',
+      tabindex: '0',
+      'aria-label': `Открыть сборку ${inst.name}`,
       onclick: () => navigate('instance', { id: inst.id }),
+      onkeydown: (e) => {
+        if (e.target === el && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          navigate('instance', { id: inst.id });
+        }
+      },
       oncontextmenu: (e) => {
         e.preventDefault();
         instanceMenu(el, inst);
@@ -45,15 +54,16 @@ function card(inst) {
     instanceIcon(inst),
     h(
       'button.play-fab' + (running ? '.running' : ''),
-      { title: running ? 'Остановить' : 'Играть', onclick: (e) => (e.stopPropagation(), play(inst.id)) },
+      { title: running ? 'Остановить' : 'Играть', 'aria-label': `${running ? 'Остановить' : 'Играть'}: ${inst.name}`, onclick: (e) => (e.stopPropagation(), play(inst.id)) },
       icon(running ? 'stop' : 'play_arrow'),
     ),
     h(
       'div',
       {},
       h('div.row', {}, running && h('span.running-dot'), h('div.name.ellipsis.grow', {}, inst.name)),
-      h('div.row.wrap', { style: { marginTop: '8px', gap: '6px' } }, h('span.tag', {}, inst.gameVersion), loaderTag(inst.loader), inst.optifine && h('span.tag.loader-optifine', {}, 'OptiFine')),
+      h('div.row.wrap.card-meta', {}, h('span.tag', {}, inst.gameVersion), loaderTag(inst.loader), inst.optifine && h('span.tag.loader-optifine', {}, 'OptiFine')),
     ),
+    h('div.card-footer', {}, h('span', {}, inst.lastPlayed ? fmtDate(inst.lastPlayed) : 'Ещё не запускалась'), h('button.icon-btn.sm', { title: 'Действия со сборкой', 'aria-label': `Действия: ${inst.name}`, onclick: e => { e.stopPropagation(); instanceMenu(e.currentTarget, inst); } }, icon('more_horiz'))),
   );
   return el;
 }
@@ -93,7 +103,7 @@ export function libraryView(page) {
         {},
         h('div.grow', {}, h('h1.page-title', {}, 'Библиотека'), h('div.page-sub', {}, list.length ? `${list.length} ${plural(list.length, 'сборка', 'сборки', 'сборок')}` : 'Здесь появятся ваши сборки')),
         btn('Импорт', { kind: 'outlined', icon: 'move_to_inbox', onClick: () => openCreateDialog({ tab: 'import' }) }),
-        btn('Новая сборка', { kind: 'filled', icon: 'add', onClick: () => openCreateDialog() }),
+        btn('Новая сборка', { kind: 'tonal', icon: 'add', onClick: () => openCreateDialog() }),
       ),
     );
 
@@ -103,9 +113,9 @@ export function libraryView(page) {
           'div.empty.glass',
           {},
           h('div.big-icon', {}, icon('deployed_code', 'fill')),
-          h('h2', {}, 'Пока пусто'),
+          h('h2', {}, 'Ваша первая сборка'),
           h('p.muted', { style: { maxWidth: '440px', margin: 0, lineHeight: 1.5 } }, 'Создайте сборку с Fabric, Forge, NeoForge, Quilt или OptiFine, установите готовый модпак с Modrinth и CurseForge — или перенесите сборки из Prism, CurseForge App, Modrinth App и других лаунчеров.'),
-          h('div.row', { style: { marginTop: '10px' } }, btn('Создать сборку', { icon: 'add', onClick: () => openCreateDialog() }), btn('Найти модпак', { kind: 'tonal', icon: 'explore', onClick: () => navigate('browse', { type: 'modpack' }) }), btn('Импорт', { kind: 'outlined', icon: 'move_to_inbox', onClick: () => openCreateDialog({ tab: 'import' }) })),
+          h('div.row.wrap', { style: { marginTop: '12px', justifyContent: 'center' } }, btn('Создать сборку', { icon: 'add', onClick: () => openCreateDialog() }), btn('Найти модпак', { kind: 'tonal', icon: 'explore', onClick: () => navigate('browse', { type: 'modpack' }) })),
         ),
       );
       return;
@@ -116,12 +126,12 @@ export function libraryView(page) {
 
     const groups = [...new Set(list.map((i) => i.group).filter(Boolean))];
     const loadersUsed = [...new Set(list.map((i) => i.loader))];
-    const search = h('input.input', { placeholder: 'Поиск по сборкам', value: query, oninput: () => ((query = search.value), drawGrid()) });
+    const search = h('input.input', { placeholder: 'Поиск по сборкам', 'aria-label': 'Поиск по сборкам', value: query, oninput: () => ((query = search.value), drawGrid()) });
     page.append(
       h(
-        'div.row.wrap',
-        { style: { margin: '24px 0 14px', gap: '12px' } },
-        h('div.chips.grow', {}, chip('all', 'Все'), groups.map((g) => chip(`g:${g}`, g, 'folder')), loadersUsed.length > 1 && loadersUsed.map((l) => chip(`l:${l}`, l[0].toUpperCase() + l.slice(1)))),
+        'div.row.wrap.library-tools',
+        {},
+        h('div.chips.grow', {}, chip('all', 'Все'), groups.map((g) => chip(`g:${g}`, g, 'folder')), loadersUsed.length > 1 && loadersUsed.map((l) => chip(`l:${l}`, LOADERS[l]?.label || l))),
         h('div.search', { style: { maxWidth: '300px' } }, icon('search'), search),
       ),
     );
